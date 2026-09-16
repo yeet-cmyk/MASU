@@ -1,7 +1,7 @@
 # Plato Chess Assistant
 
-Android prototype for chess analysis/training.
+Android chess analysis/training prototype.
 
-Implemented in code: overlay bubble, Android screen-capture consent and foreground MediaProjection capture, Plato board calibration, 64-square visual feature extraction, automatic bottom-side white/black inference, algebraic orientation mapping, FEN model, and engine boundary.
+Implemented: Android/Gradle CI base, draggable floating overlay, screen-capture permission, foreground MediaProjection frame stream, screenshot-calibrated Plato board crop, 64-square feature extraction, automatic bottom-side color inference, orientation/algebraic mapping, FEN and UCI protocol models, board stabilization helpers, and an initial-position offline suggestion.
 
-Not yet production-complete: arbitrary-position 12-piece classification and bundled UCI engine analysis still require implementation/testing on live Plato frames. No automatic taps or piece movement are performed. Use assistance only where permitted.
+The remaining blocker for arbitrary live positions is reliable classification of all 12 piece types from Plato frames plus a bundled UCI engine binary. The current code must not be represented as a complete arbitrary-position engine yet. It never automates taps/moves. Use assistance only where allowed.
