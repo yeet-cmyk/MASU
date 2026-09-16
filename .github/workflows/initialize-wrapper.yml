@@ -1,0 +1,21 @@
+name: Initialize Gradle Wrapper
+on:
+  push:
+    paths:
+      - '.github/workflows/initialize-wrapper.yml'
+permissions:
+  contents: write
+jobs:
+  wrapper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add official Gradle 8.9 wrapper
+        run: |
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/gradle/gradle/v8.9.0/gradle/wrapper/gradle-wrapper.jar -o gradle/wrapper/gradle-wrapper.jar
+          test "$(git hash-object gradle/wrapper/gradle-wrapper.jar)" = "2c3521197d7c4586c843d1d3e9090525f1898cde"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add gradle/wrapper/gradle-wrapper.jar
+          git commit -m "Add verified official Gradle 8.9 wrapper binary"
+          git push
