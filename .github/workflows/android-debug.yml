@@ -23,11 +23,11 @@ jobs:
         with:
           packages: platform-tools
       - name: Install SDK packages
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
       - name: Build Debug APK
-        run: ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug
       - name: Verify APK signature and package
         shell: bash
         run: |
@@ -36,6 +36,12 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee apk-info.txt
           grep -q "package: name='com.masu.platochess'" apk-info.txt
           grep -q "launchable-activity: name='com.masu.platochess.MainActivity'" apk-info.txt
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-results
+          path: app/build/reports/tests/
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
