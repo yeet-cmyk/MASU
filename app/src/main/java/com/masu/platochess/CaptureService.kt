@@ -59,7 +59,7 @@ class CaptureService : Service() {
         if (projection != null) return START_NOT_STICKY
         val data = if (Build.VERSION.SDK_INT >= 33) intent?.getParcelableExtra("data", Intent::class.java)
             else @Suppress("DEPRECATION") intent?.getParcelableExtra<Intent>("data")
-        if (data == null || intent.getIntExtra("resultCode", 0) != Activity.RESULT_OK) { stopSelf(); return START_NOT_STICKY }
+        if (data == null || intent?.getIntExtra("resultCode", 0) != Activity.RESULT_OK) { stopSelf(); return START_NOT_STICKY }
         try {
             val wm = getSystemService(WINDOW_SERVICE) as WindowManager
             if (Build.VERSION.SDK_INT >= 30) {
@@ -89,11 +89,21 @@ class CaptureService : Service() {
         try {
             if (!throttle.allow()) return
             val plane = image.planes[0]
-            val paddedWidth = plane.rowStride / plane.pixelStride
-            val bitmap = Bitmap.createBitmap(paddedWidth, image.height, Bitmap.Config.ARGB_8888)
+            check(plane.pixelStride == 4) { "Unsupported capture pixel format" }
+            val bitmap = Bitmap.createBitmap(image.width, image.height, Bitmap.Config.ARGB_8888)
             try {
-                bitmap.copyPixelsFromBuffer(plane.buffer)
-                frame = Bitmap.createBitmap(bitmap, 0, 0, image.width, image.height)
+                val packed = java.nio.ByteBuffer.allocate(image.width * image.height * 4)
+                val sourceBuffer = plane.buffer.duplicate()
+                val origin = sourceBuffer.position()
+                for (row in 0 until image.height) {
+                    sourceBuffer.limit(sourceBuffer.capacity())
+                    sourceBuffer.position(origin + row * plane.rowStride)
+                    sourceBuffer.limit(origin + row * plane.rowStride + image.width * 4)
+                    packed.put(sourceBuffer)
+                }
+                packed.flip()
+                bitmap.copyPixelsFromBuffer(packed)
+                frame = bitmap
             } finally { if (bitmap !== frame) bitmap.recycle() }
         } catch (_: Exception) { OverlayBus.message = "تعذر قراءة الإطار" }
         finally { image.close() }
@@ -144,7 +154,8 @@ class CaptureService : Service() {
         projection?.unregisterCallback(callback); projection?.stop(); projection = null
         engine?.close()
         handler.post { reader?.close(); reader = null; worker.quitSafely() }
-        stopForeground(STOP_FOREGROUND_REMOVE)
+        if (Build.VERSION.SDK_INT >= 24) stopForeground(STOP_FOREGROUND_REMOVE)
+        else @Suppress("DEPRECATION") stopForeground(true)
         super.onDestroy()
     }
     override fun onBind(intent: Intent?): IBinder? = null
