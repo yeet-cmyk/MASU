@@ -25,16 +25,17 @@ object BoardCalibration {
             for (left in 0..(frame.width - size) step step) {
                 for (top in (frame.height / 12)..(frame.height - size) step step) {
                     val rect = Rect(left, top, left + size, top + size)
-                    val v = gridScore(frame, rect)
+                    val v = gridScore(frame, rect, step)
                     if (v < score) { score = v; best = rect }
                 }
             }
         }
         val coarse = best ?: return null
         // Refine all three parameters at pixel resolution near the best coarse candidate.
-        for (size in (coarse.width() - step)..(coarse.width() + step) step 2)
-            for (left in (coarse.left - step)..(coarse.left + step) step 2)
-                for (top in (coarse.top - step)..(coarse.top + step) step 2) {
+        val radius = maxOf(step * 3, frame.width / 40)
+        for (size in (coarse.width() - radius)..(coarse.width() + radius) step 2)
+            for (left in (coarse.left - radius)..(coarse.left + radius) step 2)
+                for (top in (coarse.top - radius)..(coarse.top + radius) step 2) {
                     if (left < 0 || top < 0 || left + size > frame.width || top + size > frame.height) continue
                     val rect = Rect(left, top, left + size, top + size)
                     val v = gridScore(frame, rect)
@@ -43,7 +44,7 @@ object BoardCalibration {
         return best?.takeIf { score < 16.0 }
     }
     private fun rgb(p: Int) = intArrayOf(Color.red(p), Color.green(p), Color.blue(p))
-    private fun gridScore(frame: Bitmap, b: Rect): Double {
+    private fun gridScore(frame: Bitmap, b: Rect, tolerance: Int = 1): Double {
         val sums = Array(2) { DoubleArray(3) }
         val samples = Array(2) { mutableListOf<IntArray>() }
         for (r in 2..5) for (c in 0..7) {
@@ -71,7 +72,7 @@ object BoardCalibration {
             edges++
             if (delta > contrast * .65) hits++
         }
-        val d = maxOf(1, b.width() / 300)
+        val d = tolerance
         for (r in 2..5) for (c in 1..7) {
             val x = b.left + c * b.width() / 8
             val y = b.top + ((r + .5) * b.height() / 8).toInt()
