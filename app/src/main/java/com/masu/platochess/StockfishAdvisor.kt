@@ -31,6 +31,7 @@ class StockfishAdvisor(private val executable: File) : MoveAdvisor, AutoCloseabl
         output = queue
         Thread {
             try { p.inputStream.bufferedReader().useLines { lines -> lines.forEach { queue.offer(it) } } }
+            catch (_: java.io.IOException) { /* Destroying a process closes its reader asynchronously. */ }
             finally { queue.offer("__EOF__") }
         }.apply { isDaemon = true; name = "Stockfish output"; start() }
         send("uci"); until("uciok", 5000)

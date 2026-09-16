@@ -31,6 +31,9 @@ object BoardCalibration {
             }
         }
         val coarse = best ?: return null
+        // Coarse and fine edge tolerances use different scores; do not retain the coarse winner.
+        score = Double.MAX_VALUE
+        best = null
         // Refine all three parameters at pixel resolution near the best coarse candidate.
         val radius = maxOf(step * 3, frame.width / 40)
         for (size in (coarse.width() - radius)..(coarse.width() + radius) step 2)
