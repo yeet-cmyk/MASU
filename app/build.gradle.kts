@@ -10,6 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.masu.platochess"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         minSdk = 23
         targetSdk = 35
         versionCode = 2
@@ -43,3 +44,8 @@ val buildStockfish by tasks.registering(Exec::class) {
 }
 tasks.named("preBuild").configure { dependsOn(buildStockfish) }
 dependencies { testImplementation("junit:junit:4.13.2") }
+
+dependencies {
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+}
