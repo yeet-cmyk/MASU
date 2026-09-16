@@ -60,6 +60,28 @@ object BoardCalibration {
         if (contrast < 18) return Double.MAX_VALUE
         var error = 0.0
         for (a in 0..1) for (p in samples[a]) for (k in 0..2) error += abs(p[k] - sums[a][k])
-        return error / (samples.sumOf { it.size } * 3) + 60.0 / contrast
+        val interiorError = error / (samples.sumOf { it.size } * 3)
+        if (interiorError > 16) return Double.MAX_VALUE
+        // Interior-only scores have broad plateaus: lock onto actual grid boundaries too.
+        // This prevents learning differently shifted templates across the eight files.
+        var edges = 0; var hits = 0
+        fun edge(x1: Int, y1: Int, x2: Int, y2: Int) {
+            val a = rgb(frame.getPixel(x1, y1)); val z = rgb(frame.getPixel(x2, y2))
+            val delta = (0..2).sumOf { abs(a[it] - z[it]) } / 3.0
+            edges++
+            if (delta > contrast * .65) hits++
+        }
+        val d = maxOf(1, b.width() / 300)
+        for (r in 2..5) for (c in 1..7) {
+            val x = b.left + c * b.width() / 8
+            val y = b.top + ((r + .5) * b.height() / 8).toInt()
+            edge(x-d,y,x+d,y)
+        }
+        for (r in 3..5) for (c in 0..7) {
+            val x = b.left + ((c + .5) * b.width() / 8).toInt()
+            val y = b.top + r * b.height() / 8
+            edge(x,y-d,x,y+d)
+        }
+        return interiorError + 60.0 / contrast + 100.0 * (1.0 - hits.toDouble()/edges)
     }
 }

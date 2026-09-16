@@ -64,6 +64,8 @@ class RuntimeTest {
             assertFalse(reader.initialize(initial)); assertFalse(reader.initialize(initial))
             assertTrue("Could not initialize synthetic $side", reader.initialize(initial))
             assertEquals(side, reader.playerSide)
+            val bounds = reader.bounds!!
+            assertTrue("Grid offset: $bounds", kotlin.math.abs(bounds.left - 32) <= 3 && kotlin.math.abs(bounds.top - 250) <= 3 && kotlin.math.abs(bounds.width() - 576) <= 3)
             assertEquals(BoardState.initial().squares, reader.read(initial))
             val b = Rules.apply(BoardState.initial(), Rules.legalMoves(BoardState.initial()).single { it.uci() == "e2e4" })
             val moved = fixture(b, side)
