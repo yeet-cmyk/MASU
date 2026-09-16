@@ -1,19 +1,6 @@
 package com.masu.platochess
-
 import android.graphics.Rect
-
-/** Initial calibration for the supplied portrait Plato screenshots. Values are normalized so other resolutions scale. */
 object BoardCalibration {
-    fun estimate(width: Int, height: Int): Rect {
-        val left = (width * 0.025f).toInt()
-        val right = (width * 0.975f).toInt()
-        val top = (height * 0.27f).toInt()
-        val size = right - left
-        return Rect(left, top, right, top + size)
-    }
-
-    fun square(board: Rect, row: Int, col: Int): Rect {
-        val s = board.width() / 8f
-        return Rect((board.left + col*s).toInt(), (board.top + row*s).toInt(), (board.left + (col+1)*s).toInt(), (board.top + (row+1)*s).toInt())
-    }
+ fun estimate(w:Int,h:Int):Rect { val l=(w*.025f).toInt(); val r=(w*.975f).toInt(); val t=(h*.27f).toInt(); return Rect(l,t,r,t+r-l) }
+ fun square(b:Rect,row:Int,col:Int):Rect { val s=b.width()/8f; return Rect((b.left+col*s).toInt(),(b.top+row*s).toInt(),(b.left+(col+1)*s).toInt(),(b.top+(row+1)*s).toInt()) }
 }

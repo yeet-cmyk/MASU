@@ -1,7 +1,19 @@
 # Plato Chess Assistant
 
-Android prototype for permitted chess analysis/training with Plato-style boards.
+Minimal native Android starter written in Kotlin.
 
-Current implementation includes the Android project/build pipeline plus board orientation/algebraic-square mapping and normalized board calibration based on the supplied White/Black screenshots. The local player's pieces are treated as the bottom side, so mapping automatically supports both orientations.
+Package: `com.masu.platochess`.
 
-Next integration points are MediaProjection screen capture, on-device piece recognition, engine analysis, and the floating overlay. External assistance should only be used in games/modes where it is permitted.
+## Build
+
+Use JDK 17 and Android SDK 35, then run:
+
+```sh
+./gradlew assembleDebug
+```
+
+Output: `app/build/outputs/apk/debug/app-debug.apk`.
+
+GitHub Actions builds and verifies the debug APK on every push. Download `plato-chess-assistant-debug` from the run's Artifacts section and unzip it before installing on Android 6.0 or newer.
+
+This starter contains only a launcher screen. No chess engine, screen capture, overlay, or AI integration is implemented.
