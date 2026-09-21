@@ -22,30 +22,17 @@ jobs:
           cat .ci/fracture_payload_1.txt .ci/fracture_payload_2.txt .ci/fracture_payload_3.txt .ci/fracture_payload_4.txt > /tmp/fracture_payload.b64
           base64 -d /tmp/fracture_payload.b64 > /tmp/fracture_zero.zip
           unzip -q /tmp/fracture_zero.zip -d project
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path("project/scripts/player.gd")
-          s=p.read_text()
-          s=s.replace('var mobile := main != null and main.mobile_mode','var mobile: bool = main != null and bool(main.mobile_mode)')
-          s=s.replace('var move_input := Vector2.ZERO','var move_input: Vector2 = Vector2.ZERO')
-          s=s.replace('var wants_attack := main.mobile_attack_held if mobile else Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)','var wants_attack: bool = bool(main.mobile_attack_held) if mobile else Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)')
-          s=s.replace('var wants_parry := main.consume_mobile_action("parry") if mobile else (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_key_pressed(KEY_F))','var wants_parry: bool = bool(main.consume_mobile_action("parry")) if mobile else (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_key_pressed(KEY_F))')
-          s=s.replace('var wants_dash := main.consume_mobile_action("dash") if mobile else Input.is_key_pressed(KEY_SPACE)','var wants_dash: bool = bool(main.consume_mobile_action("dash")) if mobile else Input.is_key_pressed(KEY_SPACE)')
-          s=s.replace('var wants_shift := main.consume_mobile_action("shift") if mobile else Input.is_key_pressed(KEY_Q)','var wants_shift: bool = bool(main.consume_mobile_action("shift")) if mobile else Input.is_key_pressed(KEY_Q)')
-          s=s.replace('var wants_burst := main.consume_mobile_action("burst") if mobile else Input.is_key_pressed(KEY_E)','var wants_burst: bool = bool(main.consume_mobile_action("burst")) if mobile else Input.is_key_pressed(KEY_E)')
-          s=s.replace('var c := main.phase_color() if main else Color("31d9ff")','var c: Color = main.phase_color() if main else Color("31d9ff")')
-          p.write_text(s)
-
-          p=Path("project/scripts/boss.gd")
-          s=p.read_text()
-          s=s.replace('var base := (main.player.position-position).angle()','var base: float = (main.player.position-position).angle()')
-          s=s.replace('var a := base + lerp(-spread, spread, f)','var a: float = base + lerp(-spread, spread, f)')
-          p.write_text(s)
-
-          Path("project/default_bus_layout.tres").write_text('[gd_resource type="AudioBusLayout" format=3]\n\n[resource]\n')
-          PY
-          cd project
-          python3 generate_audio.py
+          sed -i 's#var mobile := main != null and main.mobile_mode#var mobile: bool = main != null and bool(main.mobile_mode)#' project/scripts/player.gd
+          sed -i 's#var move_input := Vector2.ZERO#var move_input: Vector2 = Vector2.ZERO#' project/scripts/player.gd
+          sed -i 's#var wants_attack := main.mobile_attack_held if mobile else Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)#var wants_attack: bool = bool(main.mobile_attack_held) if mobile else Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)#' project/scripts/player.gd
+          sed -i 's#var wants_parry := main.consume_mobile_action("parry") if mobile else (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_key_pressed(KEY_F))#var wants_parry: bool = bool(main.consume_mobile_action("parry")) if mobile else (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_key_pressed(KEY_F))#' project/scripts/player.gd
+          sed -i 's#var wants_dash := main.consume_mobile_action("dash") if mobile else Input.is_key_pressed(KEY_SPACE)#var wants_dash: bool = bool(main.consume_mobile_action("dash")) if mobile else Input.is_key_pressed(KEY_SPACE)#' project/scripts/player.gd
+          sed -i 's#var wants_shift := main.consume_mobile_action("shift") if mobile else Input.is_key_pressed(KEY_Q)#var wants_shift: bool = bool(main.consume_mobile_action("shift")) if mobile else Input.is_key_pressed(KEY_Q)#' project/scripts/player.gd
+          sed -i 's#var wants_burst := main.consume_mobile_action("burst") if mobile else Input.is_key_pressed(KEY_E)#var wants_burst: bool = bool(main.consume_mobile_action("burst")) if mobile else Input.is_key_pressed(KEY_E)#' project/scripts/player.gd
+          sed -i 's#var c := main.phase_color() if main else Color("31d9ff")#var c: Color = main.phase_color() if main else Color("31d9ff")#' project/scripts/player.gd
+          sed -i 's#var base := (main.player.position-position).angle()#var base: float = (main.player.position-position).angle()#' project/scripts/boss.gd
+          sed -i 's#var a := base + lerp(-spread, spread, f)#var a: float = base + lerp(-spread, spread, f)#' project/scripts/boss.gd
+          printf '%s\n\n%s\n' '[gd_resource type="AudioBusLayout" format=3]' '[resource]' > project/default_bus_layout.tres
           unzip -t /tmp/fracture_zero.zip
 
       - name: Prepare Godot Android environment
@@ -53,11 +40,10 @@ jobs:
         run: |
           export HOME=/root
           godot --version
-          test -d /root/.local/share/godot/export_templates/4.3.stable
           test -f /root/.local/share/godot/export_templates/4.3.stable/android_debug.apk
           test -d /usr/lib/android-sdk
-          ls -l /root/debug.keystore || true
-          grep -E 'android_sdk_path|java_sdk_path|debug_keystore' /root/.config/godot/editor_settings-4.tres || true
+          ls -l /root/debug.keystore
+          grep -E 'android_sdk_path|java_sdk_path|debug_keystore' /root/.config/godot/editor_settings-4.tres
 
       - name: Import project and validate scripts
         shell: bash
