@@ -33,6 +33,7 @@ jobs:
           sed -i 's#var base := (main.player.position-position).angle()#var base: float = (main.player.position-position).angle()#' project/scripts/boss.gd
           sed -i 's#var a := base + lerp(-spread, spread, f)#var a: float = base + lerp(-spread, spread, f)#' project/scripts/boss.gd
           printf '%s\n\n%s\n' '[gd_resource type="AudioBusLayout" format=3]' '[resource]' > project/default_bus_layout.tres
+          sed -i '/^\[rendering\]$/a textures/vram_compression/import_etc2_astc=true' project/project.godot
           cat > project/export_presets.cfg <<'EOF'
           [preset.0]
 
