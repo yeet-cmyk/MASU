@@ -15,42 +15,66 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v4
 
-      - name: Materialize project
+      - name: Materialize and patch project
         shell: bash
         run: |
           mkdir -p project
           cat .ci/fracture_payload_1.txt .ci/fracture_payload_2.txt .ci/fracture_payload_3.txt .ci/fracture_payload_4.txt > /tmp/fracture_payload.b64
           base64 -d /tmp/fracture_payload.b64 > /tmp/fracture_zero.zip
           unzip -q /tmp/fracture_zero.zip -d project
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("project/scripts/player.gd")
+          s=p.read_text()
+          s=s.replace('var mobile := main != null and main.mobile_mode','var mobile: bool = main != null and bool(main.mobile_mode)')
+          s=s.replace('var move_input := Vector2.ZERO','var move_input: Vector2 = Vector2.ZERO')
+          s=s.replace('var wants_attack := main.mobile_attack_held if mobile else Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)','var wants_attack: bool = bool(main.mobile_attack_held) if mobile else Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)')
+          s=s.replace('var wants_parry := main.consume_mobile_action("parry") if mobile else (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_key_pressed(KEY_F))','var wants_parry: bool = bool(main.consume_mobile_action("parry")) if mobile else (Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_key_pressed(KEY_F))')
+          s=s.replace('var wants_dash := main.consume_mobile_action("dash") if mobile else Input.is_key_pressed(KEY_SPACE)','var wants_dash: bool = bool(main.consume_mobile_action("dash")) if mobile else Input.is_key_pressed(KEY_SPACE)')
+          s=s.replace('var wants_shift := main.consume_mobile_action("shift") if mobile else Input.is_key_pressed(KEY_Q)','var wants_shift: bool = bool(main.consume_mobile_action("shift")) if mobile else Input.is_key_pressed(KEY_Q)')
+          s=s.replace('var wants_burst := main.consume_mobile_action("burst") if mobile else Input.is_key_pressed(KEY_E)','var wants_burst: bool = bool(main.consume_mobile_action("burst")) if mobile else Input.is_key_pressed(KEY_E)')
+          s=s.replace('var c := main.phase_color() if main else Color("31d9ff")','var c: Color = main.phase_color() if main else Color("31d9ff")')
+          p.write_text(s)
+
+          p=Path("project/scripts/boss.gd")
+          s=p.read_text()
+          s=s.replace('var base := (main.player.position-position).angle()','var base: float = (main.player.position-position).angle()')
+          s=s.replace('var a := base + lerp(-spread, spread, f)','var a: float = base + lerp(-spread, spread, f)')
+          p.write_text(s)
+
+          Path("project/default_bus_layout.tres").write_text('[gd_resource type="AudioBusLayout" format=3]\n\n[resource]\n')
+          PY
           cd project
-          if command -v python3 >/dev/null 2>&1; then
-            python3 generate_audio.py
-          fi
-          ls -la
+          python3 generate_audio.py
           unzip -t /tmp/fracture_zero.zip
 
-      - name: Prepare Godot templates
+      - name: Prepare Godot Android environment
         shell: bash
         run: |
-          mkdir -p /root/.local/share/godot/export_templates
-          if [ -d /root/.local/share/godot/templates/4.3.stable ] && [ ! -d /root/.local/share/godot/export_templates/4.3.stable ]; then
-            mv /root/.local/share/godot/templates/4.3.stable /root/.local/share/godot/export_templates/
-          fi
+          export HOME=/root
           godot --version
-          ls -la /root/.local/share/godot/export_templates || true
-          ls -la /usr/lib/android-sdk || true
+          test -d /root/.local/share/godot/export_templates/4.3.stable
+          test -f /root/.local/share/godot/export_templates/4.3.stable/android_debug.apk
+          test -d /usr/lib/android-sdk
+          ls -l /root/debug.keystore || true
+          grep -E 'android_sdk_path|java_sdk_path|debug_keystore' /root/.config/godot/editor_settings-4.tres || true
 
-      - name: Import project
+      - name: Import project and validate scripts
         shell: bash
         run: |
-          godot --headless --path project --import
+          export HOME=/root
+          godot --headless --path project --import 2>&1 | tee /tmp/import.log
+          if grep -q "SCRIPT ERROR: Parse Error" /tmp/import.log; then
+            exit 1
+          fi
 
       - name: Export debug APK
         shell: bash
         run: |
+          export HOME=/root
           mkdir -p project/build
           godot --headless --verbose --path project --export-debug "Android" "$GITHUB_WORKSPACE/project/build/FRACTURE_ZERO.apk"
-          test -f project/build/FRACTURE_ZERO.apk
+          test -s project/build/FRACTURE_ZERO.apk
           ls -lh project/build/FRACTURE_ZERO.apk
 
       - name: Upload APK
